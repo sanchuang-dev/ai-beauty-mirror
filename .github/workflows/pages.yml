@@ -1,0 +1,62 @@
+name: Publish initial prototype (GitHub Pages)
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'prototype/**'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate and stage preview-only resources
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s prototype/index.html
+          grep -Eiq '<html([[:space:]>])' prototype/index.html
+          mkdir -p _site
+          cp prototype/index.html _site/index.html
+          if [ -d prototype/assets ]; then
+            cp -R prototype/assets _site/assets
+            find _site/assets -name '*.js' -type f -print0 | xargs -0 -r -n 1 node --check
+          fi
+          if find _site -type l -print -quit | grep -q .; then
+            echo 'Symlinks are not allowed in public preview' >&2
+            exit 1
+          fi
+          touch _site/.nojekyll
+          test ! -e _site/AGENTS.md
+          test ! -e _site/references
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./_site
+      - id: deployment
+        uses: actions/deploy-pages@v4
+  smoke:
+    needs: publish
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check published HTML
+        shell: bash
+        env:
+          SITE_URL: ${{ needs.publish.outputs.page_url }}
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 10 --retry-delay 6 --retry-all-errors \
+            --max-time 30 "https://sanchuang-dev.github.io/${{ github.event.repository.name }}/" -o index.html
+          test -s index.html
+          grep -Eiq '<html([[:space:]>])' index.html

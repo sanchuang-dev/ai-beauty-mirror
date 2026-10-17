@@ -1,2 +1,15 @@
-# ai-beauty-mirror
-AI beauty mirror prototype
+# AI 美妆镜
+
+> 状态：**初步原型参考 / 未评审**，由非技术同事提交；不代表正式产品需求、技术可行性或上线功能。
+
+**[查看 GitHub Pages 交互预览](https://sanchuang-dev.github.io/ai-beauty-mirror/)**
+
+- 原始文件：`美妆镜原型.html`，已原样保存在 `prototype/index.html`（SHA-256：`209e0cedbf7f791542a74ec7b340805b311a11aebef31013887d2b6d21e2332c`）。
+- 文件来源：2026-10-17 提供的《原型.rar》。
+- 运行方式：纯静态 HTML，浏览器打开即可查看（美妆镜需加载同目录 `assets/app.js`）。
+- 注意：原型中的 AI 生成、商品购买、发型/穿搭效果、设备能力及相关数值**均未经过本仓库验证**。部分图片依赖第三方在线服务，可能无法加载。
+- `references/` 用于补充资料，不纳入 GitHub Pages 发布目录。
+- 一个产品一个仓库；后续评审通过的正式产品定义再放到 `docs/product/`。
+- 不包含任何可用于生产的 API 凭据、客户数据或支付集成。
+
+这个预览用于非技术同事和合作伙伴沟通界面与交互想法，**不是上线服务**。

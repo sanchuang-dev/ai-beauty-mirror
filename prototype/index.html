@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>美容院智能美妆镜 · 安卓平板原型</title>
+<style>
+/* SECTION: base */
+:root{
+  --bg:#141210; --panel:#1f1c19; --panel2:#26221e;
+  --gold:#d9b98a; --gold-soft:#e8cf9f; --pink:#e3b7b4;
+  --ink:#f2ede6; --ink-dim:#a89e92; --line:#3a342e;
+  --light-temp:#ffd9a0; --light-a:.55; --mirror-bright:1;
+  --serif:"Songti SC","STSong","SimSun",serif;
+  --sans:"PingFang SC","Microsoft YaHei",sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{background:radial-gradient(1200px 700px at 50% 20%,#201c18 0%,var(--bg) 60%);
+  color:var(--ink);font-family:var(--sans);display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:14px;padding:18px;overflow:hidden}
+button{font-family:inherit;color:inherit;border:none;background:none;cursor:pointer}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:30px;background:transparent}
+input[type=range]::-webkit-slider-runnable-track{height:6px;border-radius:3px;background:linear-gradient(90deg,var(--gold),#5a5148)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:50%;
+  background:var(--ink);border:3px solid var(--gold);margin-top:-9px;box-shadow:0 2px 8px rgba(0,0,0,.5)}
+
+/* SECTION: tablet frame */
+.stage{display:flex;flex-direction:column;align-items:center;gap:12px}
+.tablet{background:#0b0a09;border-radius:26px;padding:14px;
+  box-shadow:0 30px 80px rgba(0,0,0,.6),0 0 0 1px #2c2823 inset;position:relative}
+.tablet[data-orient="landscape"]{width:min(1160px,92vw);aspect-ratio:16/10}
+.tablet[data-orient="portrait"]{width:min(560px,88vw,78vh);aspect-ratio:10/16}
+.screen{position:relative;width:100%;height:100%;border-radius:16px;overflow:hidden;
+  background:var(--bg);display:flex;flex-direction:column}
+
+/* SECTION: android status bar */
+.statusbar{height:34px;flex:none;display:flex;align-items:center;justify-content:space-between;
+  padding:0 18px;font-size:12.5px;color:var(--ink-dim);background:#0e0d0c;z-index:40}
+.statusbar .icons{display:flex;gap:8px;align-items:center}
+.statusbar svg{display:block}
+
+/* SECTION: views */
+.views{position:relative;flex:1;min-height:0}
+.view{position:absolute;inset:0;display:none;flex-direction:column;opacity:0;transition:opacity .28s}
+.view.active{display:flex;opacity:1}
+.view-title{flex:none;padding:14px 22px 4px;display:flex;align-items:center;justify-content:space-between}
+.view-title h2{font-family:var(--serif);font-size:21px;font-weight:600;letter-spacing:.06em;color:var(--gold-soft)}
+.back-btn{font-size:13.5px;color:var(--ink-dim);border:1px solid var(--line);border-radius:999px;padding:7px 15px}
+.back-btn:hover{color:var(--ink);border-color:var(--gold)}
+
+/* SECTION: boot view */
+#view-boot{align-items:center;justify-content:center;gap:22px;cursor:pointer;
+  background:radial-gradient(600px 420px at 50% 42%,#2b241d 0%,#161311 70%)}
+.boot-mirror{width:min(40%,220px);aspect-ratio:3/4;border-radius:50% 50% 14px 14px;
+  background:linear-gradient(160deg,#3c332a,#191512 60%,#241d17);
+  border:2px solid #4d4234;box-shadow:0 0 60px rgba(217,185,138,.18),0 0 0 10px #171310;position:relative}
+.boot-mirror::after{content:"";position:absolute;inset:14px;border-radius:inherit;
+  background:linear-gradient(135deg,rgba(255,255,255,.14) 0%,transparent 45%)}
+.boot-name{font-family:var(--serif);font-size:clamp(20px,3.2vmin,30px);letter-spacing:.3em;color:var(--gold-soft)}
+.boot-tip{font-size:13px;color:var(--ink-dim);letter-spacing:.2em;animation:breath 2.4s ease-in-out infinite}
+@keyframes breath{0%,100%{opacity:.45}50%{opacity:1}}
+
+/* SECTION: mirror main view */
+.mirror-wrap{flex:1;min-height:0;display:flex;gap:14px;padding:14px 18px}
+.mirror{position:relative;flex:1;min-width:0;border-radius:18px;overflow:hidden;
+  background:linear-gradient(170deg,#332b24 0%,#1d1815 55%,#2a2119 100%);
+  border:1px solid #453a2d}
+.mirror .glow{position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(75% 60% at 50% 34%,var(--light-temp) 0%,transparent 70%);
+  opacity:var(--light-a);mix-blend-mode:soft-light}
+.mirror .brightness{position:absolute;inset:0;pointer-events:none;background:transparent}
+.mirror-face{position:absolute;left:50%;top:47%;transform:translate(-50%,-50%);
+  width:min(58%,300px);aspect-ratio:3/4;filter:brightness(var(--mirror-bright))}
+.mirror-face svg{width:100%;height:100%}
+.mirror-hint{position:absolute;left:0;right:0;bottom:14px;text-align:center;font-size:12.5px;
+  color:rgba(242,237,230,.65);letter-spacing:.18em;pointer-events:none}
+.mirror-side{flex:none;width:32%;max-width:330px;display:flex;flex-direction:column;gap:12px}
+/* portrait: side panel becomes bottom rail */
+.tablet[data-orient="portrait"] .mirror-wrap{flex-direction:column;padding:12px 14px}
+.tablet[data-orient="portrait"] .mirror-side{width:100%;max-width:none;flex-direction:row;flex:none}
+.tablet[data-orient="portrait"] .side-card.skin-card{flex:1.2}
+.tablet[data-orient="portrait"] .quick-grid{grid-template-columns:repeat(3,1fr)}
+
+.side-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.side-card h3{font-family:var(--serif);font-size:15px;color:var(--gold-soft);letter-spacing:.08em;margin-bottom:10px;font-weight:600}
+.side-card .empty{font-size:12.5px;color:var(--ink-dim);line-height:1.7}
+.skin-mini{display:flex;align-items:baseline;gap:8px;margin-bottom:8px}
+.skin-mini .score{font-size:30px;font-weight:700;color:var(--gold-soft)}
+.skin-mini .label{font-size:12.5px;color:var(--ink-dim)}
+.skin-bars{display:flex;flex-direction:column;gap:7px}
+.sbar{display:grid;grid-template-columns:52px 1fr 34px;gap:8px;align-items:center;font-size:11.5px;color:var(--ink-dim)}
+.sbar .track{height:5px;border-radius:3px;background:#37302a;overflow:hidden}
+.sbar .fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--gold),var(--pink));width:0;transition:width .6s ease}
+.sbar .val{text-align:right;color:var(--ink)}
+.quick-grid{flex:1;display:grid;grid-template-rows:repeat(3,1fr);gap:12px}
+.tablet[data-orient="portrait"] .quick-grid{grid-template-rows:repeat(1,1fr);grid-auto-flow:row}
+.tablet[data-orient="portrait"] .light-body{overflow:auto}
+.quick{border-radius:14px;background:var(--panel2);border:1px solid var(--line);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+  font-size:13.5px;color:var(--ink);letter-spacing:.1em;transition:transform .15s,border-color .2s}
+.quick:hover{transform:translateY(-2px);border-color:var(--gold)}
+.quick svg{width:30px;height:30px;stroke:var(--gold-soft);fill:none;stroke-width:1.6}
+.tablet[data-orient="portrait"] .quick{gap:6px;font-size:12px}
+
+/* SECTION: skin test view */
+.skin-body{flex:1;min-height:0;display:flex;flex-direction:column;padding:12px 18px 16px;gap:12px}
+.skin-stage{position:relative;flex:1;min-height:0;border-radius:16px;overflow:hidden;
+  background:linear-gradient(170deg,#2e2620,#191512 60%,#241c16);border:1px solid #3f352a;
+  display:flex;align-items:center;justify-content:center}
+.skin-stage .face{width:min(50%,220px);aspect-ratio:3/4;opacity:.9}
+.scanline{position:absolute;left:8%;right:8%;height:3px;border-radius:2px;top:10%;
+  background:linear-gradient(90deg,transparent,var(--gold-soft) 20%,#fff 50%,var(--gold-soft) 80%,transparent);
+  box-shadow:0 0 18px 4px rgba(232,207,159,.55);display:none}
+.scanning .scanline{display:block;animation:scan 1.6s ease-in-out infinite alternate}
+@keyframes scan{from{top:12%}to{top:86%}}
+.scan-frame{position:absolute;inset:9% 12%;border-radius:14px;display:none;
+  border:1px dashed rgba(232,207,159,.5)}
+.scanning .scan-frame{display:block}
+.skin-progress{position:absolute;left:50%;bottom:12px;transform:translateX(-50%);
+  font-size:12.5px;color:var(--gold-soft);letter-spacing:.12em;display:none;white-space:nowrap}
+.scanning .skin-progress{display:block}
+.skin-result{display:none;background:var(--panel);border:1px solid var(--line);
+  border-radius:14px;padding:14px 16px}
+.skin-result.show{display:block}
+.sr-head{display:flex;align-items:center;gap:14px;margin-bottom:12px}
+.sr-head .big{font-size:34px;font-weight:700;color:var(--gold-soft)}
+.sr-head .meta{font-size:12.5px;color:var(--ink-dim);line-height:1.6}
+.sr-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px}
+.sr-item{background:var(--panel2);border:1px solid var(--line);border-radius:10px;
+  padding:10px 8px;text-align:center}
+.sr-item .n{font-size:20px;font-weight:700;color:var(--ink)}
+.sr-item .t{font-size:11.5px;color:var(--ink-dim);margin-top:3px;letter-spacing:.05em}
+.sr-advice{font-size:12.5px;color:var(--ink);line-height:1.8;border-top:1px dashed var(--line);padding-top:10px}
+.sr-advice b{color:var(--pink);font-weight:600}
+.skin-actions{flex:none;display:flex;gap:12px}
+.primary-btn{flex:1;background:linear-gradient(135deg,var(--gold) 0%,#b98f52 100%);color:#221a10;
+  border-radius:12px;padding:14px;font-size:15px;font-weight:700;letter-spacing:.14em;
+  box-shadow:0 6px 18px rgba(217,185,138,.28)}
+.primary-btn:active{transform:translateY(1px)}
+.primary-btn:disabled{opacity:.5;cursor:default}
+.ghost-btn{border:1px solid var(--gold);color:var(--gold-soft);border-radius:12px;
+  padding:14px 22px;font-size:14px;letter-spacing:.1em;background:transparent}
+
+/* SECTION: light view */
+.light-body{flex:1;min-height:0;display:flex;gap:14px;padding:12px 18px 16px}
+.light-preview{flex:1.1;position:relative;border-radius:16px;overflow:hidden;
+  background:linear-gradient(170deg,#332b24,#1d1815 55%,#2a2119);border:1px solid #453a2d}
+.light-preview .lp-glow{position:absolute;inset:0;
+  background:radial-gradient(75% 60% at 50% 34%,var(--light-temp) 0%,transparent 72%);
+  opacity:var(--light-a);mix-blend-mode:soft-light}
+.light-preview .face{position:absolute;left:50%;top:47%;transform:translate(-50%,-50%);
+  width:min(55%,230px);aspect-ratio:3/4;filter:brightness(var(--mirror-bright))}
+.lp-caption{position:absolute;left:0;right:0;bottom:12px;text-align:center;font-size:12px;
+  color:rgba(242,237,230,.7);letter-spacing:.14em}
+.light-panel{flex:1;display:flex;flex-direction:column;gap:12px;min-width:0}
+.lp-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.lp-card h4{font-size:13px;color:var(--ink-dim);letter-spacing:.14em;margin-bottom:10px;font-weight:500}
+.slider-row{display:flex;align-items:center;gap:10px}
+.slider-row .ico{font-size:14px;color:var(--ink-dim);width:20px;text-align:center}
+.slider-val{font-size:13px;color:var(--gold-soft);min-width:64px;text-align:right;font-variant-numeric:tabular-nums}
+.preset-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.preset{border-radius:12px;border:1px solid var(--line);background:var(--panel2);padding:12px 6px;
+  display:flex;flex-direction:column;align-items:center;gap:8px;font-size:12px;color:var(--ink-dim);
+  letter-spacing:.06em;transition:border-color .2s,color .2s}
+.preset .dot{width:22px;height:22px;border-radius:50%;box-shadow:0 0 10px rgba(255,255,255,.25) inset}
+.preset.selected,.preset:hover{border-color:var(--gold);color:var(--ink)}
+.light-note{font-size:12px;color:var(--ink-dim);line-height:1.7;margin-top:auto}
+.tablet[data-orient="portrait"] .light-body{flex-direction:column}
+
+/* SECTION: makeup view */
+.makeup-body{flex:1;min-height:0;overflow:auto;padding:6px 18px 14px}
+.mk-linked{font-size:12.5px;color:var(--gold-soft);letter-spacing:.08em;padding:6px 2px 10px;display:none}
+.mk-linked.show{display:block}
+.mk-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+.mk-card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;
+  display:flex;flex-direction:column;gap:10px;text-align:left;transition:transform .15s,border-color .2s}
+.mk-card:hover{transform:translateY(-3px);border-color:var(--gold)}
+.mk-top{display:flex;align-items:center;gap:12px}
+.mk-swatch{flex:none;width:52px;height:52px;border-radius:14px;box-shadow:0 4px 12px rgba(0,0,0,.4)}
+.mk-name{display:block;font-family:var(--serif);font-size:16.5px;color:var(--ink);letter-spacing:.05em}
+.mk-sub{display:block;font-size:11.5px;color:var(--ink-dim);margin-top:3px}
+.mk-tags{display:flex;gap:6px;flex-wrap:wrap}
+.mk-tag{font-size:11px;color:var(--pink);border:1px solid rgba(227,183,180,.4);
+  border-radius:999px;padding:3px 9px;letter-spacing:.05em}
+.mk-rec{margin-left:auto;font-size:11px;color:#221a10;background:var(--gold-soft);
+  border-radius:999px;padding:3px 10px;font-weight:700;flex:none}
+.mk-desc{font-size:12.5px;color:var(--ink-dim);line-height:1.7}
+
+/* SECTION: makeup detail modal */
+.modal{position:absolute;inset:0;background:rgba(10,8,6,.72);backdrop-filter:blur(3px);
+  display:none;align-items:center;justify-content:center;z-index:60;padding:22px}
+.modal.show{display:flex}
+.modal-card{background:var(--panel);border:1px solid #4a3f31;border-radius:18px;
+  width:min(560px,100%);max-height:100%;overflow:auto;padding:20px 22px;position:relative}
+.modal-close{position:absolute;right:14px;top:12px;font-size:20px;color:var(--ink-dim);padding:6px}
+.modal-title{display:flex;align-items:center;gap:14px;margin-bottom:6px}
+.modal-title .mk-swatch{width:46px;height:46px}
+.modal-title h3{font-family:var(--serif);font-size:19px;color:var(--gold-soft);letter-spacing:.08em;font-weight:600}
+.modal-sec{margin-top:16px}
+.modal-sec h5{font-size:12.5px;color:var(--ink-dim);letter-spacing:.16em;margin-bottom:8px;font-weight:500}
+.step-list{display:flex;flex-direction:column;gap:8px;counter-reset:st}
+.step{display:flex;gap:10px;font-size:13px;line-height:1.6;color:var(--ink)}
+.step .no{flex:none;width:22px;height:22px;border-radius:50%;background:var(--panel2);
+  border:1px solid var(--gold);color:var(--gold-soft);font-size:11.5px;
+  display:flex;align-items:center;justify-content:center;margin-top:1px}
+.prod-list{display:flex;flex-direction:column;gap:6px}
+.prod{display:flex;justify-content:space-between;align-items:center;font-size:13px;
+  background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:9px 12px}
+.prod .p-name{color:var(--ink)}
+.prod .p-note{color:var(--ink-dim);font-size:11.5px}
+.book-btn{margin-top:18px;width:100%}
+
+/* SECTION: toast + controls */
+.toast{position:absolute;left:50%;bottom:64px;transform:translateX(-50%) translateY(10px);
+  background:rgba(31,28,25,.95);border:1px solid var(--gold);color:var(--ink);
+  font-size:13px;padding:10px 18px;border-radius:999px;opacity:0;transition:all .3s;
+  pointer-events:none;white-space:nowrap;z-index:80}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.proto-bar{display:flex;gap:10px;align-items:center;font-size:12.5px;color:var(--ink-dim)}
+.proto-bar .lab{letter-spacing:.14em}
+.proto-btn{border:1px solid var(--line);border-radius:999px;padding:7px 16px;font-size:12.5px;
+  color:var(--ink-dim);letter-spacing:.08em;transition:color .2s,border-color .2s}
+.proto-btn.selected,.proto-btn:hover{color:var(--gold-soft);border-color:var(--gold)}
+.proto-sep{width:1px;height:16px;background:var(--line)}
+</style>
+</head>
+<body>
+<div class="stage">
+
+  <!-- SECTION: tablet -->
+  <div class="tablet" id="tablet" data-orient="landscape">
+    <div class="screen" id="screen">
+
+      <!-- SECTION: statusbar -->
+      <div class="statusbar">
+        <span id="clock">09:30</span>
+        <div class="icons" aria-hidden="true">
+          <span id="net-label">美容顾问 · 智能美妆镜</span>
+          <svg width="16" height="12" viewBox="0 0 16 12" fill="none" stroke="#a89e92" stroke-width="1.4">
+            <path d="M1 4.5a10 10 0 0 1 14 0"/><path d="M3.5 7a7 7 0 0 1 9 0"/><circle cx="8" cy="9.6" r="1.2" fill="#a89e92" stroke="none"/>
+          </svg>
+          <svg width="20" height="11" viewBox="0 0 20 11" fill="none" stroke="#a89e92" stroke-width="1.2">
+            <rect x="0.6" y="0.6" width="16" height="9.8" rx="2"/><rect x="2.4" y="2.4" width="9.5" height="6.2" fill="#a89e92" stroke="none"/><path d="M18.4 3.6v3.8"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="views">
+
+        <!-- SECTION: boot view -->
+        <div class="view active" id="view-boot" role="button" aria-label="点亮镜面">
+          <div class="boot-mirror"></div>
+          <div class="boot-name">镜 · 悦颜</div>
+          <div class="boot-tip">轻触镜面 开启您的专属美丽</div>
+        </div>
+
+        <!-- SECTION: mirror main view -->
+        <div class="view" id="view-mirror">
+          <div class="mirror-wrap">
+            <div class="mirror" id="mirror-main">
+              <div class="glow"></div>
+              <div class="mirror-face" id="face-main"></div>
+              <div class="mirror-hint" id="mirror-hint">悦颜美妆镜 · 已为您补光</div>
+            </div>
+            <div class="mirror-side">
+              <div class="side-card skin-card">
+                <h3>今日肌肤档案</h3>
+                <div id="side-skin"><!-- 由 JS 渲染：未测肤空状态 / 迷你报告 --></div>
+              </div>
+              <div class="quick-grid">
+                <button class="quick" data-go="skin">
+                  <svg viewBox="0 0 24 24"><circle cx="12" cy="9" r="5"/><path d="M4 20c1.5-3 4.5-4.5 8-4.5s6.5 1.5 8 4.5"/><path d="M12 6.5v5M9.5 9h5"/></svg>
+                  <span>智能测肤</span>
+                </button>
+                <button class="quick" data-go="light">
+                  <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.5"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/></svg>
+                  <span>灯光调节</span>
+                </button>
+                <button class="quick" data-go="makeup">
+                  <svg viewBox="0 0 24 24"><path d="M9 3h6l1 5c0 2-1.5 3-1.5 3v8a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-8S8 10 8 8z"/><path d="M9.5 14h5"/></svg>
+                  <span>妆容推荐</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECTION: skin test view -->
+        <div class="view" id="view-skin">
+          <div class="view-title">
+            <h2>智能测肤</h2>
+            <button class="back-btn" data-go="mirror">返回镜面</button>
+          </div>
+          <div class="skin-body">
+            <div class="skin-stage" id="skin-stage">
+              <div class="face" id="face-skin"></div>
+              <div class="scan-frame"></div>
+              <div class="scanline"></div>
+              <div class="skin-progress" id="skin-progress">正在分析肌肤状态…</div>
+            </div>
+            <div class="skin-result" id="skin-result"><!-- JS 渲染 --></div>
+            <div class="skin-actions">
+              <button class="primary-btn" id="btn-scan" data-primary-action>开始测肤</button>
+              <button class="ghost-btn" id="btn-skin-again" style="display:none">重新测肤</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECTION: light view -->
+        <div class="view" id="view-light">
+          <div class="view-title">
+            <h2>灯光调节</h2>
+            <button class="back-btn" data-go="mirror">返回镜面</button>
+          </div>
+          <div class="light-body">
+            <div class="light-preview">
+              <div class="lp-glow"></div>
+              <div class="face" id="face-light"></div>
+              <div class="lp-caption" id="lp-caption">自然光 · 5000K</div>
+            </div>
+            <div class="light-panel">
+              <div class="lp-card">
+                <h4>色温</h4>
+                <div class="slider-row">
+                  <span class="ico">暖</span>
+                  <input type="range" id="temp-slider" min="2700" max="6500" step="50" value="5000" aria-label="色温">
+                  <span class="ico">冷</span>
+                  <span class="slider-val" id="temp-val">5000K</span>
+                </div>
+              </div>
+              <div class="lp-card">
+                <h4>亮度</h4>
+                <div class="slider-row">
+                  <span class="ico">暗</span>
+                  <input type="range" id="bright-slider" min="20" max="100" step="1" value="70" aria-label="亮度">
+                  <span class="ico">亮</span>
+                  <span class="slider-val" id="bright-val">70%</span>
+                </div>
+              </div>
+              <div class="lp-card">
+                <h4>预设光效</h4>
+                <div class="preset-grid" id="preset-grid"><!-- JS 渲染 --></div>
+              </div>
+              <div class="light-note">灯光设置将实时作用于镜面补光，并在您切换页面后保持。</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- SECTION: makeup view -->
+        <div class="view" id="view-makeup">
+          <div class="view-title">
+            <h2>妆容推荐</h2>
+            <button class="back-btn" data-go="mirror">返回镜面</button>
+          </div>
+          <div class="mk-linked" id="mk-linked"></div>
+          <div class="makeup-body">
+            <div class="mk-grid" id="mk-grid"><!-- JS 渲染 --></div>
+          </div>
+        </div>
+
+        <!-- SECTION: modal -->
+        <div class="modal" id="mk-modal" role="dialog" aria-modal="true">
+          <div class="modal-card" id="mk-modal-card"><!-- JS 渲染 --></div>
+        </div>
+
+        <div class="toast" id="toast"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION: prototype controls（原型演示控制，非平板界面内容） -->
+  <div class="proto-bar" aria-label="原型控制">
+    <span class="lab">原型控制</span>
+    <button class="proto-btn selected" id="btn-landscape">横屏 16:10</button>
+    <button class="proto-btn" id="btn-portrait">竖屏 10:16</button>
+    <span class="proto-sep"></span>
+    <button class="proto-btn" id="btn-reset">重置演示数据</button>
+  </div>
+</div>
+
+<script src="assets/app.js"></script>
+</body>
+</html>
